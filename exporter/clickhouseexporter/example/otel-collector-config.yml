@@ -3,6 +3,8 @@ receivers:
     endpoint: 0.0.0.0:24224
   otlp:
     protocols:
+      # http:
+      #   endpoint: 0.0.0.0:4317
       grpc:
         endpoint: 0.0.0.0:4317
 processors:
@@ -19,9 +21,14 @@ processors:
       hostname_sources: [ "os" ]
   resource:
     attributes:
-      - key: service.name
-        value: "serviceName"
-        action: upsert
+      - key: my.server.token
+        value: $MY_SERVER_TOKEN
+        action: insert
+  # resource:
+  #   attributes:
+  #     - key: service.name
+  #       value: "serviceName"
+  #       action: upsert
 exporters:
   clickhouse:
     endpoint: tcp://clickhouse:9000
@@ -37,6 +44,11 @@ exporters:
       initial_interval: 5s
       max_interval: 30s
       max_elapsed_time: 300s
+  otlphttp:
+    endpoint: https://ingest.master-7rqtwti-k6rsgrmdblgaa.fr-4.platformsh.site
+    # tls:
+    #   insecure: true
+
 extensions:
   health_check:
   pprof:
@@ -54,4 +66,4 @@ service:
     traces:
       receivers: [ otlp ]
       processors: [ memory_limiter, resourcedetection/system, resource, batch ]
-      exporters: [ clickhouse ]
+      exporters: [ clickhouse, otlphttp]

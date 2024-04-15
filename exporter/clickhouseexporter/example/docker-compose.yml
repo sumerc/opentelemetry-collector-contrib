@@ -3,13 +3,16 @@ version: "3"
 networks:
   otel-clickhouse:
 
+volumes:
+  grafana-storage:
+
 services:
   otelcollector:
     build:
       context: ../../../local
       dockerfile: ../exporter/clickhouseexporter/example/Dockerfile
     # Uncomment the next line to use a preexisting image
-    # image: otelcontribcol:latest
+    image: otelcontribcol:latest
     container_name: otel
     command:
       - "--config=/etc/otel-collector-config.yml"
@@ -27,6 +30,8 @@ services:
       - clickhouse
     networks:
       - otel-clickhouse
+    environment:
+      - MY_SERVER_TOKEN=my-server-token-value
 
   clickhouse:
     image: clickhouse/clickhouse-server:latest
@@ -41,6 +46,7 @@ services:
     volumes:
       - ./grafana.ini:/etc/grafana/grafana.ini
       - ./datasource.yaml:/etc/grafana/provisioning/datasources/datasource.yaml
+      - grafana-storage:/var/lib/grafana
     environment:
       GF_INSTALL_PLUGINS: grafana-clickhouse-datasource,vertamedia-clickhouse-datasource
       GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS: vertamedia-clickhouse-datasource
@@ -50,35 +56,35 @@ services:
       - otel-clickhouse
 
   # Log generator
-  flog:
-    image: mingrammer/flog:0.4.3
-    # Output fake log in JSON format
-    command: [ "--format=json", "--loop", "--delay=100ms"]
-    networks:
-      - otel-clickhouse
-    depends_on:
-      - otelcollector
-    logging:
-      driver: fluentd
-      options:
-        mode: non-blocking
-        # Allow time for otel-collector to spin up, then forward fluentd logs to the fluentforwarder receiver.
-        fluentd-async-connect: "true"
-        # Use nanosecond precision
-        fluentd-sub-second-precision: "true"
-    stop_signal: SIGKILL
+  # flog:
+  #   image: mingrammer/flog:0.4.3
+  #   # Output fake log in JSON format
+  #   command: [ "--format=json", "--loop", "--delay=100ms"]
+  #   networks:
+  #     - otel-clickhouse
+  #   depends_on:
+  #     - otelcollector
+  #   logging:
+  #     driver: fluentd
+  #     options:
+  #       mode: non-blocking
+  #       # Allow time for otel-collector to spin up, then forward fluentd logs to the fluentforwarder receiver.
+  #       fluentd-async-connect: "true"
+  #       # Use nanosecond precision
+  #       fluentd-sub-second-precision: "true"
+  #   stop_signal: SIGKILL
 
-  # Traces generator
-  telemetrygen:
-    build:
-      context: ../../../cmd/telemetrygen/
-    command:
-      - traces
-      - --otlp-endpoint=otelcollector:4317
-      - --otlp-insecure
-      - --rate=100
-      - --duration=10000h
-    networks:
-      - otel-clickhouse
-    depends_on:
-      - otelcollector
+  #Traces generator
+  # telemetrygen:
+  #   build:
+  #     context: ../../../cmd/telemetrygen/
+  #   command:
+  #     - traces
+  #     - --otlp-endpoint=otelcollector:4317
+  #     - --otlp-insecure
+  #     - --rate=100
+  #     - --duration=10000h
+  #   networks:
+  #     - otel-clickhouse
+  #   depends_on:
+  #     - otelcollector

@@ -6,6 +6,20 @@ datasources:
     type: grafana-clickhouse-datasource
     jsonData:
       defaultDatabase: otel
+      traces:
+        defaultTable: otel_traces
+        otelEnabled: true
+        otelVersion: 1.2.9
+        traceIdColumn: TraceId
+        spanIdColumn: SpanId
+        operationNameColumn: SpanName
+        parentSpanIdColumn: ParentSpanId
+        serviceNameColumn: ServiceName
+        durationColumn: Duration
+        durationUnit: milliseconds
+        startTimeColumn: Timestamp
+        tagsColumn: SpanAttributes
+        serviceTagsColumn: ResourceAttributes
       port: 9000
       server: clickhouse
       protocol: native
